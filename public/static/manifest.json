@@ -1,7 +1,7 @@
 {
-  "name": "BDU Tələbə Hesablayıcıları",
-  "short_name": "BDU Calc",
-  "description": "Bakı Dövlət Universiteti tələbələri üçün hesablayıcı tətbiqi",
+  "name": "UniFy BDU EDU",
+  "short_name": "UniFy",
+  "description": "UniFy - BDU tələbələri üçün akademik hesablayıcı tətbiqi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

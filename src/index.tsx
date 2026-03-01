@@ -14,7 +14,7 @@ app.get('/', (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BDU Tələbə Hesablayıcıları</title>
+    <title>UniFy - BDU EDU</title>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#4F46E5">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
@@ -35,7 +35,10 @@ app.get('/', (c) => {
     <div class="pt-16 pb-8 px-4" id="mainContainer">
         <!-- Header -->
         <div class="max-w-4xl mx-auto text-center mb-8">
-            <h1 class="text-4xl font-bold text-indigo-900 mb-2">🎓 BDU Tələbə Hesablayıcıları</h1>
+            <div class="flex items-center justify-center mb-4">
+                <img src="/static/logo.png" alt="UniFy Logo" class="w-24 h-24">
+            </div>
+            <h1 class="text-4xl font-bold text-indigo-900 mb-2">UniFy BDU EDU</h1>
             <p class="text-gray-600">Akademik həyatınızı asanlaşdırın</p>
         </div>
 
