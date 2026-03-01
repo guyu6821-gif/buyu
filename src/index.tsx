@@ -92,19 +92,20 @@ app.get('/', (c) => {
                 <h3 class="text-xl font-bold text-gray-800 mb-2">Sürətli Linklər</h3>
                 <p class="text-gray-600 text-sm">Faydalı linklər toplusu</p>
             </div>
-
-            <!-- Quraşdır -->
-            <div class="menu-card bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition cursor-pointer" onclick="installApp()">
-                <div class="text-4xl mb-3">📱</div>
-                <h3 class="text-xl font-bold mb-2">Quraşdır</h3>
-                <p class="text-sm opacity-90">Tətbiqi telefonunuza yükləyin</p>
-            </div>
         </div>
 
         <!-- Info Button -->
         <div class="fixed bottom-6 right-6 z-40" id="infoButton">
             <button onclick="showInfo()" class="bg-indigo-600 text-white w-12 h-12 rounded-full shadow-lg hover:bg-indigo-700 transition flex items-center justify-center">
                 <i class="fas fa-info text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Install Button (Floating) -->
+        <div id="installBtn" class="fixed bottom-6 left-6 z-40 hidden">
+            <button onclick="installApp()" class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition flex items-center gap-2 font-semibold">
+                <i class="fas fa-download text-lg"></i>
+                <span class="hidden sm:inline">Quraşdır</span>
             </button>
         </div>
     </div>

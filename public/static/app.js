@@ -1,11 +1,28 @@
 // Service Worker Registration for PWA
 let deferredPrompt;
-let installButton;
+let scrollPosition = 0;
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    showInstallButton();
 });
+
+// Show install button
+function showInstallButton() {
+    const installBtn = document.getElementById('installBtn');
+    if (installBtn && deferredPrompt) {
+        installBtn.style.display = 'flex';
+    }
+}
+
+// Hide install button
+function hideInstallButton() {
+    const installBtn = document.getElementById('installBtn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+}
 
 function installApp() {
     if (deferredPrompt) {
@@ -13,6 +30,7 @@ function installApp() {
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('PWA installed');
+                hideInstallButton();
             }
             deferredPrompt = null;
         });
@@ -21,12 +39,26 @@ function installApp() {
     }
 }
 
-// Register Service Worker
+// Register Service Worker with better error handling
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/static/sw.js')
-            .then(reg => console.log('Service Worker registered'))
-            .catch(err => console.log('Service Worker registration failed'));
+            .then(reg => {
+                console.log('Service Worker registered:', reg);
+                // Check for updates
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New service worker available
+                            if (confirm('Yeni versiya mövcuddur. Yeniləmək istəyirsiniz?')) {
+                                window.location.reload();
+                            }
+                        }
+                    });
+                });
+            })
+            .catch(err => console.log('Service Worker registration failed:', err));
     });
 }
 
@@ -35,8 +67,20 @@ function showInfo() {
     alert('ℹ️ O, boşluq yaradır.');
 }
 
+// Save scroll position
+function saveScrollPosition() {
+    scrollPosition = window.scrollY;
+}
+
+// Restore scroll position
+function restoreScrollPosition() {
+    window.scrollTo(0, scrollPosition);
+}
+
 // Navigation Functions
 function showSection(sectionName) {
+    saveScrollPosition();
+    
     const mainContainer = document.getElementById('mainContainer');
     const contentSections = document.getElementById('contentSections');
     const infoButton = document.getElementById('infoButton');
@@ -72,6 +116,7 @@ function showSection(sectionName) {
     }
     
     contentSections.innerHTML = content;
+    window.scrollTo(0, 0);
 }
 
 function goBack() {
@@ -83,6 +128,11 @@ function goBack() {
     contentSections.classList.add('hidden');
     infoButton.classList.remove('hidden');
     contentSections.innerHTML = '';
+    
+    // Restore scroll position after DOM update
+    setTimeout(() => {
+        restoreScrollPosition();
+    }, 10);
 }
 
 // Content Templates
@@ -99,14 +149,24 @@ function getSemestrContent() {
                 <!-- Seminar Section -->
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2">Seminar bal sayı (maksimum 9):</label>
-                    <input type="number" id="seminarCount" min="0" max="9" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" onchange="generateSeminarInputs()">
+                    <div class="flex gap-2">
+                        <input type="number" id="seminarCount" min="0" max="9" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <button onclick="generateSeminarInputs()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition font-semibold">
+                            Yarat
+                        </button>
+                    </div>
                     <div id="seminarInputs" class="mt-3"></div>
                 </div>
                 
                 <!-- Kollekvium Section -->
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2">Kollekvium bal sayı (maksimum 4):</label>
-                    <input type="number" id="kollekviumCount" min="0" max="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" onchange="generateKollekviumInputs()">
+                    <div class="flex gap-2">
+                        <input type="number" id="kollekviumCount" min="0" max="4" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <button onclick="generateKollekviumInputs()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition font-semibold">
+                            Yarat
+                        </button>
+                    </div>
                     <div id="kollekviumInputs" class="mt-3"></div>
                 </div>
                 
@@ -155,7 +215,12 @@ function getUomgContent() {
                 
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2">Fənn sayı:</label>
-                    <input type="number" id="fennCount" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" onchange="generateUomgInputs()">
+                    <div class="flex gap-2">
+                        <input type="number" id="fennCount" min="1" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <button onclick="generateUomgInputs()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition font-semibold">
+                            Yarat
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="uomgInputs" class="mb-6"></div>
