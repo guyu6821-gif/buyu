@@ -39,29 +39,54 @@ function installApp() {
     }
 }
 
-// Register Service Worker - SIMPLE AND WORKING
+// Register Service Worker - FOR OFFLINE START
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/static/sw.js')
             .then(reg => {
-                console.log('✅ SW Registered');
-                return reg.update();
+                console.log('✅ SW Registered - OFFLINE START ENABLED');
+                
+                // Force immediate update
+                reg.update();
+                
+                // When SW is ready, log it
+                navigator.serviceWorker.ready.then(() => {
+                    console.log('🚀 APP READY FOR OFFLINE START!');
+                    console.log('📱 You can now use this app without internet!');
+                });
+                
+                return reg;
             })
-            .catch(err => console.error('❌ SW Registration failed:', err));
+            .catch(err => {
+                console.error('❌ SW Registration failed:', err);
+                console.log('⚠️ Offline mode will NOT work');
+            });
+    });
+    
+    // Listen for when SW takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('🔄 SW Updated - Reloading for offline capability');
     });
     
     // Offline/Online indicators
     window.addEventListener('online', () => {
-        console.log('✅ ONLINE');
+        console.log('✅ ONLINE - Syncing...');
         document.body.classList.remove('offline-mode');
     });
     
     window.addEventListener('offline', () => {
-        console.log('📵 OFFLINE');
+        console.log('📵 OFFLINE - Using cached data');
         document.body.classList.add('offline-mode');
     });
     
-    console.log('Connection:', navigator.onLine ? 'ONLINE' : 'OFFLINE');
+    // Log initial state
+    console.log('🌐 Status:', navigator.onLine ? 'ONLINE ✅' : 'OFFLINE 📵');
+    
+    // Check if launched from PWA
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('source') === 'pwa') {
+        console.log('📱 Launched from HOME SCREEN (PWA mode)');
+    }
 }
 
 // Show Info
