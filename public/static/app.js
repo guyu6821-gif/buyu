@@ -39,58 +39,29 @@ function installApp() {
     }
 }
 
-// Register Service Worker - AGGRESSIVE OFFLINE CACHING
+// Register Service Worker - SIMPLE AND WORKING
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/static/sw.js')
             .then(reg => {
-                console.log('✅ Service Worker registered successfully');
-                
-                // Force update check
-                reg.update();
-                
-                // Check for updates
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    console.log('🔄 New Service Worker installing...');
-                    
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) {
-                                console.log('✨ New version available');
-                                // Automatically activate new service worker
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                window.location.reload();
-                            } else {
-                                console.log('✅ Service Worker installed for the first time');
-                            }
-                        }
-                    });
-                });
-                
-                // Listen for controlling service worker change
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('🔄 Service Worker controller changed');
-                });
+                console.log('✅ SW Registered');
+                return reg.update();
             })
-            .catch(err => {
-                console.error('❌ Service Worker registration failed:', err);
-            });
+            .catch(err => console.error('❌ SW Registration failed:', err));
     });
     
-    // Check if we're online or offline
+    // Offline/Online indicators
     window.addEventListener('online', () => {
-        console.log('✅ Back online');
+        console.log('✅ ONLINE');
         document.body.classList.remove('offline-mode');
     });
     
     window.addEventListener('offline', () => {
-        console.log('📵 Gone offline');
+        console.log('📵 OFFLINE');
         document.body.classList.add('offline-mode');
     });
     
-    // Log initial connection status
-    console.log('🌐 Connection status:', navigator.onLine ? 'Online' : 'Offline');
+    console.log('Connection:', navigator.onLine ? 'ONLINE' : 'OFFLINE');
 }
 
 // Show Info

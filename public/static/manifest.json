@@ -3,6 +3,7 @@
   "short_name": "UniFy",
   "description": "UniFy - BDU tələbələri üçün akademik hesablayıcı tətbiqi",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4F46E5",
