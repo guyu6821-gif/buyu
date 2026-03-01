@@ -1,5 +1,7 @@
-const CACHE_NAME = 'unifybdu-v2';
-const urlsToCache = [
+const CACHE_NAME = 'unifybdu-offline-v3';
+
+// All assets to cache for offline
+const ASSETS_TO_CACHE = [
   '/',
   '/static/style.css',
   '/static/app.js',
@@ -7,103 +9,172 @@ const urlsToCache = [
   '/static/manifest.json',
   '/static/icon-192.png',
   '/static/icon-512.png',
-  '/static/logo.png',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'
+  '/static/logo.png'
 ];
 
-// Install Service Worker - aggressive caching
+// Install - cache everything immediately
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
+  console.log('[SW] Installing service worker...');
+  
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[SW] Caching app shell');
-        return cache.addAll(urlsToCache.map(url => {
-          return new Request(url, { cache: 'reload' });
-        })).catch(err => {
-          console.log('[SW] Cache addAll error:', err);
-          // Try caching individually
-          return Promise.all(
-            urlsToCache.map(url => {
-              return cache.add(url).catch(err => {
-                console.log('[SW] Failed to cache:', url);
-              });
-            })
-          );
-        });
-      })
-  );
-  self.skipWaiting();
-});
-
-// Fetch - Cache First Strategy for offline support
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response immediately
-        if (response) {
-          console.log('[SW] Serving from cache:', event.request.url);
-          return response;
-        }
-        
-        // Not in cache - fetch from network
-        console.log('[SW] Fetching from network:', event.request.url);
-        return fetch(event.request).then(
-          (response) => {
-            // Check if valid response
-            if (!response || response.status !== 200) {
-              return response;
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Caching all assets');
+      
+      // Cache our assets one by one to avoid failures
+      const cachePromises = ASSETS_TO_CACHE.map(url => {
+        return fetch(url)
+          .then(response => {
+            if (response.ok) {
+              return cache.put(url, response);
             }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            // Cache the fetched response for future offline use
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                // Only cache GET requests
-                if (event.request.method === 'GET') {
-                  cache.put(event.request, responseToCache);
-                }
-              });
-
-            return response;
-          }
-        ).catch(() => {
-          // Network failed and not in cache - return cached home page
-          console.log('[SW] Network failed, serving cached home');
-          return caches.match('/');
-        });
-      })
+            console.warn('[SW] Failed to cache:', url);
+            return null;
+          })
+          .catch(err => {
+            console.error('[SW] Error caching:', url, err);
+            return null;
+          });
+      });
+      
+      return Promise.all(cachePromises);
+    }).then(() => {
+      console.log('[SW] All assets cached successfully');
+      return self.skipWaiting();
+    })
   );
 });
 
-// Activate Service Worker
+// Activate - clean old caches and take control immediately
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
-  const cacheWhitelist = [CACHE_NAME];
+  console.log('[SW] Activating service worker...');
   
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('[SW] Service worker activated');
+      return self.clients.claim();
     })
   );
-  
-  return self.clients.claim();
 });
 
-// Message handler
+// Fetch - Cache First, then Network
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Skip chrome extensions and other non-http requests
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+  
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          console.log('[SW] Serving from cache:', event.request.url);
+          return cachedResponse;
+        }
+        
+        console.log('[SW] Fetching from network:', event.request.url);
+        
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Only cache successful GET requests
+            if (event.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
+              // Clone response before caching
+              const responseToCache = networkResponse.clone();
+              
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            
+            return networkResponse;
+          })
+          .catch((error) => {
+            console.error('[SW] Fetch failed, trying cache:', error);
+            
+            // If network fails, try to return cached version of homepage
+            if (event.request.mode === 'navigate') {
+              return caches.match('/').then((cachedHome) => {
+                if (cachedHome) {
+                  return cachedHome;
+                }
+                
+                // Return offline page
+                return new Response(
+                  `<!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Offline - UniFy</title>
+                    <style>
+                      body {
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        text-align: center;
+                        padding: 20px;
+                      }
+                      .offline-message {
+                        max-width: 400px;
+                      }
+                      h1 { font-size: 3em; margin: 0; }
+                      p { font-size: 1.2em; margin: 20px 0; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="offline-message">
+                      <h1>📵</h1>
+                      <h2>Offline</h2>
+                      <p>Internet bağlantınız yoxdur. Zəhmət olmasa yenidən cəhd edin.</p>
+                      <button onclick="location.reload()" style="background: white; color: #667eea; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold;">
+                        Yenilə
+                      </button>
+                    </div>
+                  </body>
+                  </html>`,
+                  {
+                    headers: { 'Content-Type': 'text/html' }
+                  }
+                );
+              });
+            }
+            
+            return new Response('Offline - məlumat əlçatan deyil', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
+      })
+  );
+});
+
+// Handle messages from clients
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CACHE_URLS') {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.addAll(event.data.urls);
+      })
+    );
   }
 });

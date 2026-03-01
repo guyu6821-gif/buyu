@@ -39,27 +39,58 @@ function installApp() {
     }
 }
 
-// Register Service Worker with better error handling
+// Register Service Worker - AGGRESSIVE OFFLINE CACHING
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/static/sw.js')
             .then(reg => {
-                console.log('Service Worker registered:', reg);
+                console.log('✅ Service Worker registered successfully');
+                
+                // Force update check
+                reg.update();
+                
                 // Check for updates
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
+                    console.log('🔄 New Service Worker installing...');
+                    
                     newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // New service worker available
-                            if (confirm('Yeni versiya mövcuddur. Yeniləmək istəyirsiniz?')) {
+                        if (newWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                console.log('✨ New version available');
+                                // Automatically activate new service worker
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
                                 window.location.reload();
+                            } else {
+                                console.log('✅ Service Worker installed for the first time');
                             }
                         }
                     });
                 });
+                
+                // Listen for controlling service worker change
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service Worker controller changed');
+                });
             })
-            .catch(err => console.log('Service Worker registration failed:', err));
+            .catch(err => {
+                console.error('❌ Service Worker registration failed:', err);
+            });
     });
+    
+    // Check if we're online or offline
+    window.addEventListener('online', () => {
+        console.log('✅ Back online');
+        document.body.classList.remove('offline-mode');
+    });
+    
+    window.addEventListener('offline', () => {
+        console.log('📵 Gone offline');
+        document.body.classList.add('offline-mode');
+    });
+    
+    // Log initial connection status
+    console.log('🌐 Connection status:', navigator.onLine ? 'Online' : 'Offline');
 }
 
 // Show Info

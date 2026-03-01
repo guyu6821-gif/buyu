@@ -125,3 +125,21 @@ input:focus, select:focus {
         transform: translateY(0);
     }
 }
+
+/* Offline Mode Indicator */
+.offline-mode::before {
+    content: '📵 Offline Mode - Cached data';
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f59e0b;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
